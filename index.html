@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omni Invite Card Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Great+Vibes&family=Roboto&display=swap" rel="stylesheet">
+<style>
+body { font-family:'Roboto',sans-serif; margin:0; padding:0; overflow-x:hidden; }
+/* Animated gradient background */
+body::before {
+    content:"";
+    position:fixed; top:0; left:0; width:100%; height:100%; z-index:-2;
+    background: linear-gradient(45deg,#ff0080,#ff8c00,#40e0d0,#8a2be2);
+    background-size: 600% 600%; animation: gradientShift 20s ease infinite;
+}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+#particleCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;}
+.app-container{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:20px;}
+.controls{flex:1;min-width:300px;max-height:90vh;overflow-y:auto;padding:20px;background:rgba(255,255,255,0.85);border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.2);}
+.controls h2{text-align:center;margin-bottom:15px; text-shadow:0 0 5px #fff;}
+.form-group{margin-bottom:12px;}
+label{display:block;margin-bottom:5px;font-weight:bold;color:#333;}
+input[type=text],textarea,select,input[type=color],input[type=file],input[type=number]{width:100%;padding:8px;border-radius:5px;border:1px solid #ccc;box-sizing:border-box;}
+textarea{resize:vertical;height:60px;}
+.card-preview{flex:2;display:flex;gap:15px;flex-wrap:wrap;justify-content:center;align-items:flex-start;position:relative;min-height:400px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.2);padding:20px;}
+.card{width:100%;max-width:300px;aspect-ratio:4/5;background:rgba(255,255,255,0.95);border-radius:15px;position:relative;overflow:hidden;border:2px solid #fff;box-shadow:0 8px 25px rgba(0,0,0,0.4),0 0 30px rgba(255,255,255,0.3) inset;transition: transform 0.3s, box-shadow 0.3s;}
+.card:hover{transform:scale(1.03) rotate(0.5deg);box-shadow:0 15px 40px rgba(0,0,0,0.5),0 0 40px rgba(255,255,255,0.5) inset;}
+.card-content span.highlight{padding:0 5px;border-radius:5px;cursor:move;display:inline-block;position:absolute;background:rgba(255,255,255,0.6);backdrop-filter:blur(5px);}
+.card img.custom-image{position:absolute;cursor:move;border-radius:10px;max-width:80%;max-height:40%;object-fit:contain;}
+button{padding:10px 15px;margin-top:10px;border:none;border-radius:5px;background:#ff6b81;color:#fff;cursor:pointer;font-weight:bold;}
+button:hover{background:#ff4b61;}
+.particle{position:absolute;width:6px;height:6px;background:gold;border-radius:50%;opacity:0.7;pointer-events:none;}
+/* Text Animations */
+@keyframes fadeAnim {0%,100%{opacity:0}50%{opacity:1}}
+@keyframes bounceAnim {0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes slideAnim {0%{transform:translateX(-20px)}50%{transform:translateX(0)}100%{transform:translateX(-20px)}}
+/* Premium locked inputs */
+.premium-only { filter: blur(3px); pointer-events: none; opacity:0.6; transition: all 0.3s ease; }
+.premium-unlocked { filter: none; pointer-events: auto; opacity:1; }
+</style>
+</head>
+<body>
+<canvas id="particleCanvas"></canvas>
+<div class="app-container">
+<div class="controls">
+<h2>Omni Invite Card Generator</h2>
+
+<div class="form-group">
+<label for="numCards">Number of Cards (1–3, premium unlock allows 4–6)</label>
+<input type="number" id="numCards" min="1" max="3" value="1" class="premium-only">
+</div>
+
+<div class="form-group">
+<label for="templateSelect">Preset Template (premium unlock adds Neon/VIP)</label>
+<select id="templateSelect" class="premium-only">
+<option value="none">None</option>
+<option value="wedding">Wedding</option>
+<option value="birthday">Birthday</option>
+<option value="party">Party</option>
+<option value="corporate">Corporate</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="inviteeName">Invitee Name</label>
+<input type="text" id="inviteeName" placeholder="John Doe">
+</div>
+
+<div class="form-group">
+<label for="message">Message</label>
+<textarea id="message" placeholder="You are invited!"></textarea>
+</div>
+
+<div class="form-group">
+<label for="textBgColor">Text Background Color</label>
+<input type="color" id="textBgColor" value="#ffffff">
+</div>
+
+<div class="form-group">
+<label for="textColor">Text Color</label>
+<input type="color" id="textColor" value="#333333">
+</div>
+
+<div class="form-group">
+<label for="fontFamily">Font Family</label>
+<select id="fontFamily">
+<option value="Roboto, sans-serif">Roboto</option>
+<option value="Pacifico, cursive">Pacifico</option>
+<option value="Great Vibes, cursive">Great Vibes</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="bgColor">Card Background Color</label>
+<input type="color" id="bgColor" value="#ffffff">
+</div>
+
+<div class="form-group">
+<label for="bgImage">Card Background Image</label>
+<input type="file" id="bgImage" accept="image/*">
+</div>
+
+<div class="form-group">
+<label for="customImage">Custom Image / Sticker</label>
+<input type="file" id="customImage" accept="image/*">
+</div>
+
+<div class="form-group">
+<label for="textAnimation">Text Animation</label>
+<select id="textAnimation">
+<option value="none">None</option>
+<option value="fade">Fade</option>
+<option value="bounce">Bounce</option>
+<option value="slide">Slide</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="musicFile">Background Music (optional)</label>
+<input type="file" id="musicFile" accept="audio/*">
+<audio id="bgMusic" controls style="width:100%;margin-top:5px;"></audio>
+</div>
+
+<!-- Payment info -->
+<div class="form-group">
+<label>Pay to Unlock Pro Features</label>
+<p>Send payment to Moniepoint Account: <strong>8034494412</strong></p>
+<p>Contact via WhatsApp after payment to receive your premium code: <strong>pay 1$  or 1400 Naira to receive the premium code</strong></p>
+<a href="https://wa.me/2349124623012?text=Hi%20Omni%20Invite%20Card%20Team!%20I%20have%20completed%20payment%20and%20need%20my%20premium%20code." target="_blank">Contact via WhatsApp</a>
+</div>
+
+<div class="form-group">
+<label>Enter Premium Code</label>
+<input type="text" id="premiumCode" placeholder="Enter premium code to unlock features">
+<button id="unlockBtn">Unlock Premium</button>
+</div>
+
+<button id="downloadBtn">Download Cards</button>
+<button id="shareBtn">Share Cards</button>
+</div>
+
+<div class="card-preview" id="cardPreview"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// Particle animation
+const canvas=document.getElementById('particleCanvas');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+let particles=[];
+for(let i=0;i<80;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*3+1,speed:Math.random()*0.5+0.2})}
+function animateParticles(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.fill();
+        p.y-=p.speed;
+        if(p.y<0)p.y=canvas.height;
+    });
+    requestAnimationFrame(animateParticles);
+}
+animateParticles();
+window.onresize=()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+
+// Card logic
+const cardPreview=document.getElementById('cardPreview');
+const numCardsInput=document.getElementById('numCards');
+const inviteeNameInput=document.getElementById('inviteeName');
+const messageInput=document.getElementById('message');
+const textColorInput=document.getElementById('textColor');
+const textBgColorInput=document.getElementById('textBgColor');
+const fontFamilySelect=document.getElementById('fontFamily');
+const bgColorInput=document.getElementById('bgColor');
+const textAnimationSelect=document.getElementById('textAnimation');
+const bgMusicInput=document.getElementById('musicFile');
+const bgMusic=document.getElementById('bgMusic');
+
+const premiumCodeInput=document.getElementById('premiumCode');
+const unlockBtn=document.getElementById('unlockBtn');
+const validCodes=["OMNI2026","OMNI207","OMNI4"];
+const premiumElements=document.querySelectorAll('.premium-only');
+
+let cards=[];
+let isPremium=false;
+
+function unlockPremiumFeatures() {
+    isPremium=true;
+    premiumElements.forEach(el=>el.classList.add('premium-unlocked'));
+}
+
+unlockBtn.addEventListener('click',()=>{
+    const code=premiumCodeInput.value.trim();
+    if(validCodes.includes(code)){
+        alert("Premium features unlocked! 🎉");
+        localStorage.setItem("omniPremium","true");
+        unlockPremiumFeatures();
+    } else {
+        alert("Invalid code. Contact WhatsApp to get your premium code.");
+    }
+});
+
+if(localStorage.getItem("omniPremium")==="true"){unlockPremiumFeatures();}
+
+// Multi-card generation
+function generateCards(){
+    const n=parseInt(numCardsInput.value);
+    if(n>3 && !isPremium){ alert("Pro feature: unlock premium to create more than 3 cards."); return; }
+    cardPreview.innerHTML='';
+    cards=[];
+    for(let i=0;i<n;i++){
+        const card=document.createElement('div');
+        card.className='card';
+        card.innerHTML=`<div class="card-content">
+        <h1><span class="highlight" style="top:20px;left:20px;">[Invitee Name]</span></h1>
+        <p><span class="highlight" style="top:100px;left:20px;">[Your message here]</span></p>
+        </div>`;
+        cardPreview.appendChild(card);
+        cards.push(card);
+        makeMovableResizable(card.querySelector('.highlight'));
+    }
+    updateCards();
+}
+
+function updateCards(){
+    cards.forEach(card=>{
+        const nameSpan=card.querySelector('h1 .highlight');
+        const messageSpan=card.querySelector('p .highlight');
+        nameSpan.textContent=inviteeNameInput.value||'[Invitee Name]';
+        messageSpan.textContent=messageInput.value||'[Your message here]';
+        nameSpan.style.backgroundColor=textBgColorInput.value;
+        messageSpan.style.backgroundColor=textBgColorInput.value;
+        card.style.backgroundColor=bgColorInput.value;
+        card.style.color=textColorInput.value;
+        nameSpan.style.fontFamily=fontFamilySelect.value;
+        messageSpan.style.fontFamily=fontFamilySelect.value;
+        applyAnimation(nameSpan);
+        applyAnimation(messageSpan);
+    });
+}
+
+function applyAnimation(el){
+    const anim=textAnimationSelect.value;
+    el.style.animation='';
+    if(anim==='fade'){ el.style.animation='fadeAnim 2s infinite'; }
+    if(anim==='bounce'){ el.style.animation='bounceAnim 1s infinite'; }
+    if(anim==='slide'){ el.style.animation='slideAnim 1.5s infinite'; }
+}
+
+function makeMovableResizable(el){
+    let isDragging=false, offsetX, offsetY;
+    el.onmousedown=function(e){isDragging=true;offsetX=e.offsetX;offsetY=e.offsetY;}
+    document.onmousemove=function(e){if(isDragging){const rect=el.parentElement.getBoundingClientRect();el.style.left=(e.clientX-rect.left-offsetX)+'px';el.style.top=(e.clientY-rect.top-offsetY)+'px';}}
+    document.onmouseup=function(){isDragging=false;}
+}
+
+bgMusicInput.addEventListener('change',e=>{
+    const file=e.target.files[0];
+    if(file){bgMusic.src=URL.createObjectURL(file);}
+});
+
+[numCardsInput,inviteeNameInput,messageInput,textColorInput,textBgColorInput,fontFamilySelect,bgColorInput,textAnimationSelect].forEach(el=>{el.addEventListener('input',updateCards);});
+numCardsInput.addEventListener('change',generateCards);
+generateCards();
+</script>
+</body>
+</html>
